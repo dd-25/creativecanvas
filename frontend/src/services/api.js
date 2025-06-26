@@ -1,9 +1,29 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
+// Get API base URL with multiple fallbacks
+const getApiBaseUrl = () => {
+  // First try Vite environment variables
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  // Fallback for production build issues
+  if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
+    // If we're on Vercel but env var failed, use a reasonable default
+    // You should replace this with your actual backend URL
+    return 'https://your-backend.vercel.app';
+  }
+  
+  // Development fallback
+  return 'http://localhost:5000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000',
+  baseURL: API_BASE_URL,
   timeout: 30000, // 30 seconds timeout
   headers: {
     'Content-Type': 'application/json',

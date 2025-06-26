@@ -18,7 +18,7 @@ node_modules/
 # Keep these example files
 !.env.example
 !.env.development
-!.env.production
+.env.production
 
 # Logs
 *.log
