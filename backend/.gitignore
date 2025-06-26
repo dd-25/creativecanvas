@@ -1,0 +1,91 @@
+# Backend specific .gitignore
+
+# Dependencies
+node_modules/
+
+# Production
+build/
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Unnecessary markdown files (backend specific)
+CHANGELOG*.md
+CONTRIBUTING*.md
+TODO*.md
+NOTES*.md
+TEMP*.md
+DRAFT*.md
+BUILD*.md
+DEPLOY*.md
+TROUBLESHOOTING*.md
+API_REFERENCE*.md
+ENDPOINT_DOCS*.md
+DATABASE_SCHEMA*.md
+MIGRATION*.md
+
+# Generated documentation
+docs/generated/
+docs/api/
+
+# Test files
+test-outputs/
+*.test.md
+
+# Database files (if using local DB)
+*.sqlite
+*.sqlite3
+*.db
+
+# Temporary files
+tmp/
+temp/

@@ -1,0 +1,366 @@
+.sidebar {
+  width: 300px;
+  background: var(--white);
+  border-right: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+  overflow-y: auto;
+  transition: width var(--transition-normal);
+  flex-shrink: 0;
+}
+
+.sidebar.collapsed {
+  width: 60px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--gray-50);
+}
+
+.sidebar-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.collapse-btn {
+  padding: 0.25rem;
+  border: none;
+  background: none;
+  color: var(--gray-500);
+  cursor: pointer;
+  border-radius: var(--rounded);
+  transition: all var(--transition-fast);
+}
+
+.collapse-btn:hover {
+  background: var(--gray-200);
+  color: var(--gray-700);
+}
+
+.sidebar-content {
+  padding: 0;
+}
+
+/* Sidebar Sections */
+.sidebar-section {
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.sidebar-section:last-child {
+  border-bottom: none;
+}
+
+.section-header {
+  padding: 1rem;
+  background: var(--gray-50);
+  border: none;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: default;
+}
+
+.section-header.clickable {
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.section-header.clickable:hover {
+  background: var(--gray-100);
+}
+
+.section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.section-content {
+  padding: 1rem;
+}
+
+/* Tools Grid */
+.tools-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.75rem 0.5rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--rounded-lg);
+  background: var(--white);
+  color: var(--gray-600);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tool-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: var(--gray-50);
+  transform: translateY(-1px);
+}
+
+.tool-btn.active {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: var(--white);
+  box-shadow: var(--shadow-md);
+}
+
+.tool-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.tool-label {
+  font-size: 0.75rem;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--rounded-md);
+  background: var(--white);
+  color: var(--gray-700);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  width: 100%;
+  text-align: left;
+}
+
+.action-btn:hover {
+  background: var(--gray-50);
+  border-color: var(--gray-400);
+}
+
+.action-btn.danger {
+  border-color: var(--error-color);
+  color: var(--error-color);
+}
+
+.action-btn.danger:hover {
+  background: var(--error-color);
+  color: var(--white);
+}
+
+/* Help Section */
+.help-section {
+  margin-top: auto;
+}
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.shortcut-key {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--rounded);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-weight: 500;
+}
+
+.shortcut-desc {
+  color: var(--gray-500);
+}
+
+/* Image Upload Section */
+.image-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.upload-method {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.upload-method h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.file-input {
+  padding: 0.5rem;
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--rounded-md);
+  background: var(--gray-50);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.file-input:hover {
+  border-color: var(--primary-color);
+  background: var(--primary-50);
+}
+
+.url-input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.url-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--rounded-md);
+  font-size: 0.875rem;
+}
+
+.url-submit-btn {
+  padding: 0.5rem 1rem;
+  background: var(--primary-color);
+  color: var(--white);
+  border: none;
+  border-radius: var(--rounded-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.url-submit-btn:hover:not(:disabled) {
+  background: var(--primary-600);
+}
+
+.url-submit-btn:disabled {
+  background: var(--gray-300);
+  cursor: not-allowed;
+}
+
+/* Drawing Options */
+.drawing-options {
+  padding: 1rem 0;
+}
+
+.tool-description {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Image upload toggle */
+.image-upload-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--background);
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.toggle-btn.active {
+  background: var(--primary);
+  color: white;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform var(--transition-normal);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar.collapsed {
+    width: 280px;
+    transform: translateX(-100%);
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 100%;
+  }
+  
+  .tools-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .tool-btn {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .tool-btn svg {
+    width: 1rem;
+    height: 1rem;
+  }
+  
+  .tool-label {
+    font-size: 0.6875rem;
+  }
+}
