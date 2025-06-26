@@ -21,8 +21,9 @@ export default defineConfig({
     minify: 'esbuild',
     target: 'es2015',
     rollupOptions: {
+      external: [],
       output: {
-        manualChunks: undefined, // Let Vite handle chunking automatically
+        manualChunks: undefined,
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]'
@@ -31,6 +32,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000
   },
   optimizeDeps: {
-    include: ['react', 'react-dom']
+    include: ['react', 'react-dom'],
+    exclude: []
+  },
+  esbuild: {
+    target: 'es2015'
   }
 })
