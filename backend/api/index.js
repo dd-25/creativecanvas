@@ -84,7 +84,7 @@ const corsOptions = {
     const allowedOrigins = process.env.NODE_ENV === 'production' 
       ? [
           process.env.CORS_ORIGIN,
-          'https://your-frontend-deployment.vercel.app',
+          'https://creativecanvas-frontend-u9m8.vercel.app',
           /\.vercel\.app$/,
           /localhost/
         ].filter(Boolean)

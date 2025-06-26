@@ -10,9 +10,8 @@ const getApiBaseUrl = () => {
   
   // Fallback for production build issues
   if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
-    // If we're on Vercel but env var failed, use a reasonable default
-    // You should replace this with your actual backend URL
-    return 'https://your-backend.vercel.app';
+    // If we're on Vercel but env var failed, use your actual backend URL
+    return 'https://creativecanvas-backend.vercel.app';
   }
   
   // Development fallback
