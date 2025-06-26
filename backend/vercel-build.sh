@@ -5,15 +5,20 @@ set -e
 
 echo "🚀 Starting backend build for Vercel..."
 
-# Set environment variables for native modules
-export NODE_ENV=production
+# Load production environment variables from .env.production
+if [ -f ".env.production" ]; then
+    echo "📄 Loading production environment variables..."
+    export $(cat .env.production | grep -v '^#' | grep -v '^$' | xargs)
+else
+    echo "⚠️ No .env.production file found, using defaults"
+    export NODE_ENV=production
+    export PORT=3000
+fi
+
+# Set build-specific environment variables (not sensitive)
+export NODE_VERSION=18
 export DISABLE_OPENCOLLECTIVE=true
 export ADBLOCK=true
-export NODE_OPTIONS="--max_old_space_size=3008 --max-semi-space-size=128"
-export UV_THREADPOOL_SIZE=4
-export CANVAS_PREBUILT_BINARY=false
-export CANVAS_FORCE_FALLBACK=true
-export SHARP_IGNORE_GLOBAL_LIBVIPS=true
 export NPM_CONFIG_PRODUCTION=false
 
 echo "🔧 Environment configured for native dependencies"
@@ -58,11 +63,13 @@ else
     exit 1
 fi
 
-# Check server.js exists and is valid
-if node -c server.js; then
-    echo "✅ Server.js syntax valid"
+# Check API entry point exists and is valid
+if [ -f "api/index.js" ] && node -c api/index.js; then
+    echo "✅ API entry point valid"
+elif [ -f "server.js" ] && node -c server.js; then
+    echo "✅ Server.js valid"
 else
-    echo "❌ Server.js has syntax errors"
+    echo "❌ No valid entry point found"
     exit 1
 fi
 

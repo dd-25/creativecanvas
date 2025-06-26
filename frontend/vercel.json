@@ -5,23 +5,9 @@
   "outputDirectory": "dist",
   "installCommand": null,
   "devCommand": "npm run dev",
-  "env": {
-    "NODE_ENV": "production",
-    "NODE_VERSION": "18",
-    "NPM_CONFIG_PRODUCTION": "false",
-    "DISABLE_ROLLUP_NATIVE": "true",
-    "ROLLUP_NO_NATIVE": "true",
-    "NODE_OPTIONS": "--max_old_space_size=4096",
-    "VITE_API_URL": "https://your-backend-url.vercel.app"
-  },
   "build": {
     "env": {
-      "NODE_ENV": "production",
-      "NODE_VERSION": "18",
-      "NPM_CONFIG_PRODUCTION": "false",
-      "DISABLE_ROLLUP_NATIVE": "true",
-      "ROLLUP_NO_NATIVE": "true",
-      "NODE_OPTIONS": "--max_old_space_size=4096"
+      "NODE_ENV": "production"
     }
   },
   "rewrites": [

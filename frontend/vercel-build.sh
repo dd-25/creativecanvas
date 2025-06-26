@@ -5,10 +5,23 @@ set -e
 
 echo "🚀 Starting Vercel build process..."
 
-# Set environment variables to disable native modules
+# Set build environment variables (not sensitive ones)
+export NODE_ENV=production
+export NODE_VERSION=18
+export NPM_CONFIG_PRODUCTION=false
 export DISABLE_ROLLUP_NATIVE=true
 export ROLLUP_NO_NATIVE=true
 export NODE_OPTIONS="--max_old_space_size=4096"
+
+echo "🔧 Environment configured for build"
+
+# Load production environment variables from .env.production
+if [ -f ".env.production" ]; then
+    echo "📄 Loading production environment variables..."
+    export $(cat .env.production | grep -v '^#' | xargs)
+else
+    echo "⚠️ No .env.production file found"
+fi
 
 # Clean install with no optional packages to avoid native modules
 echo "📦 Installing dependencies (no optional packages)..."
