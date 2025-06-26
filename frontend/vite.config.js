@@ -17,16 +17,18 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false, // Disable sourcemaps for production builds to avoid issues
-    minify: 'esbuild', // Use esbuild instead of terser for faster builds
-    target: 'es2015', // Ensure compatibility
+    sourcemap: false,
+    minify: 'esbuild',
+    target: 'es2015',
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom']
-        }
+        manualChunks: undefined, // Let Vite handle chunking automatically
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
-    }
+    },
+    chunkSizeWarningLimit: 1000
   },
   optimizeDeps: {
     include: ['react', 'react-dom']

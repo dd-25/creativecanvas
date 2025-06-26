@@ -1,16 +1,17 @@
 {
   "version": 2,
   "name": "canvas-builder-frontend",
-  "buildCommand": "npm ci && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm ci",
+  "installCommand": "npm install",
   "framework": "vite",
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "VITE_API_URL": "https://your-backend-url.vercel.app"
   },
-  "functions": {
-    "app": {
-      "includeFiles": "dist/**"
+  "build": {
+    "env": {
+      "NODE_VERSION": "18"
     }
   },
   "rewrites": [
