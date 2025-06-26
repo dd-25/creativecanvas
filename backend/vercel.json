@@ -1,24 +1,48 @@
 {
   "version": 2,
   "name": "canvas-builder-backend",
+  "buildCommand": "npm run vercel-build",
   "builds": [
     {
-      "src": "server.js",
-      "use": "@vercel/node"
+      "src": "api/index.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxLambdaSize": "50mb",
+        "includeFiles": "**"
+      }
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "NODE_VERSION": "18",
+    "DISABLE_OPENCOLLECTIVE": "true",
+    "ADBLOCK": "true",
+    "NODE_OPTIONS": "--max_old_space_size=3008 --max-semi-space-size=128",
+    "UV_THREADPOOL_SIZE": "4",
+    "CANVAS_PREBUILT_BINARY": "false",
+    "CANVAS_FORCE_FALLBACK": "true",
+    "SHARP_IGNORE_GLOBAL_LIBVIPS": "true",
+    "NPM_CONFIG_PRODUCTION": "false"
   },
   "functions": {
-    "server.js": {
-      "maxDuration": 30
+    "api/index.js": {
+      "maxDuration": 60,
+      "memory": 3008,
+      "runtime": "nodejs18.x"
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/server.js"
+      "src": "/api/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/health",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/",
+      "dest": "/api/index.js"
     }
   ],
   "headers": [
@@ -35,7 +59,28 @@
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
+          "value": "Content-Type, Authorization, x-requested-with"
+        },
+        {
+          "key": "Access-Control-Max-Age",
+          "value": "86400"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
         }
       ]
     }
