@@ -18,7 +18,9 @@ echo "🔧 Environment configured for build"
 # Load production environment variables from .env.production
 if [ -f ".env.production" ]; then
     echo "📄 Loading production environment variables..."
-    export $(cat .env.production | grep -v '^#' | xargs)
+    set -a  # automatically export all variables
+    source .env.production
+    set +a  # stop automatically exporting
 else
     echo "⚠️ No .env.production file found"
 fi

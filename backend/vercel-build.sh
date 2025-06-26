@@ -8,7 +8,9 @@ echo "🚀 Starting backend build for Vercel..."
 # Load production environment variables from .env.production
 if [ -f ".env.production" ]; then
     echo "📄 Loading production environment variables..."
-    export $(cat .env.production | grep -v '^#' | grep -v '^$' | xargs)
+    set -a  # automatically export all variables
+    source .env.production
+    set +a  # stop automatically exporting
 else
     echo "⚠️ No .env.production file found, using defaults"
     export NODE_ENV=production
