@@ -8,17 +8,13 @@
       "use": "@vercel/node",
       "config": {
         "maxLambdaSize": "50mb",
-        "includeFiles": "**"
+        "includeFiles": "**",
+        "maxDuration": 60,
+        "memory": 3008,
+        "runtime": "nodejs18.x"
       }
     }
   ],
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 60,
-      "memory": 3008,
-      "runtime": "nodejs18.x"
-    }
-  },
   "routes": [
     {
       "src": "/api/(.*)",
