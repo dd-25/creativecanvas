@@ -1,3 +1,4 @@
+// filepath: d:\IIITN\Coding\Projects\rocketium_assignment\copilot\backend\vercel.json
 {
   "version": 2,
   "name": "canvas-builder-backend",
@@ -5,12 +6,6 @@
     {
       "src": "server.js",
       "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/server.js"
     }
   ],
   "env": {
@@ -21,6 +16,12 @@
       "maxDuration": 30
     }
   },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/server.js"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
@@ -35,7 +36,7 @@
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "X-Requested-With, Content-Type, Accept, Authorization"
+          "value": "Content-Type, Authorization"
         }
       ]
     }
