@@ -1,18 +1,27 @@
 {
   "version": 2,
-  "name": "canvas-builder-frontend",
-  "buildCommand": "npm ci --production=false && npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm ci --production=false",
   "framework": null,
+  "buildCommand": "chmod +x vercel-build.sh && ./vercel-build.sh",
+  "outputDirectory": "dist",
+  "installCommand": null,
+  "devCommand": "npm run dev",
   "env": {
     "NODE_ENV": "production",
-    "VITE_API_URL": "https://your-backend-url.vercel.app",
-    "NPM_CONFIG_PRODUCTION": "false"
+    "NODE_VERSION": "18",
+    "NPM_CONFIG_PRODUCTION": "false",
+    "DISABLE_ROLLUP_NATIVE": "true",
+    "ROLLUP_NO_NATIVE": "true",
+    "NODE_OPTIONS": "--max_old_space_size=4096",
+    "VITE_API_URL": "https://your-backend-url.vercel.app"
   },
   "build": {
     "env": {
-      "NODE_VERSION": "18.17.0"
+      "NODE_ENV": "production",
+      "NODE_VERSION": "18",
+      "NPM_CONFIG_PRODUCTION": "false",
+      "DISABLE_ROLLUP_NATIVE": "true",
+      "ROLLUP_NO_NATIVE": "true",
+      "NODE_OPTIONS": "--max_old_space_size=4096"
     }
   },
   "rewrites": [
