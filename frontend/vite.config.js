@@ -17,14 +17,18 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // Disable sourcemaps for production builds to avoid issues
+    minify: 'esbuild', // Use esbuild instead of terser for faster builds
+    target: 'es2015', // Ensure compatibility
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['react-icons', 'react-color', 'react-draggable']
+          vendor: ['react', 'react-dom']
         }
       }
     }
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom']
   }
 })
