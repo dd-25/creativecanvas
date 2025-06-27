@@ -39,8 +39,23 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
-app.use('/', canvasRoutes);
-app.use('/', elementsRoutes);
+app.use('/api/canvas', canvasRoutes);
+app.use('/api/canvas', elementsRoutes);  // Mount elements routes under canvas as well
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Canvas Builder API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      canvas: '/api/canvas',
+      elements: '/api/canvas'
+    },
+    documentation: 'https://github.com/your-repo/canvas-builder'
+  });
+});
 
 // Error handling middleware
 app.use(errorHandler);

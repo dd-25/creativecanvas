@@ -14,8 +14,8 @@ const compression = require('compression');
 let canvasRoutes, elementsRoutes;
 
 try {
-  canvasRoutes = require('./routes/canvasRoutes');
-  elementsRoutes = require('./routes/elementsRoutes');
+  canvasRoutes = require('../routes/canvasRoutes');
+  elementsRoutes = require('../routes/elementsRoutes');
 } catch (error) {
   console.warn('Route import warning:', error.message);
   // Create fallback routes
@@ -41,7 +41,7 @@ try {
 let errorHandler, notFoundHandler;
 
 try {
-  const middleware = require('./middleware/errorHandler');
+  const middleware = require('../middleware/errorHandler');
   errorHandler = middleware.errorHandler;
   notFoundHandler = middleware.notFoundHandler;
 } catch (error) {
@@ -154,7 +154,7 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api/canvas', canvasRoutes);
-app.use('/api/elements', elementsRoutes);
+app.use('/api/canvas', elementsRoutes);  // Mount elements routes under canvas as well
 
 // Root endpoint
 app.get('/', (req, res) => {
