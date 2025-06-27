@@ -7,7 +7,6 @@ import Canvas from './components/Canvas';
 import LoadingSpinner from './components/LoadingSpinner';
 import WelcomeModal from './components/WelcomeModal';
 import ErrorBoundary from './components/ErrorBoundary';
-import EnvDebug from './components/EnvDebug';
 import { canvasAPI, apiUtils } from './services/api';
 import './App.css';
 
@@ -673,7 +672,6 @@ function App() {
       )}
 
       {isLoading && <LoadingSpinner />}
-      <EnvDebug />
       </div>
     </ErrorBoundary>
   );

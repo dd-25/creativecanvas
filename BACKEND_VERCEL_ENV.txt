@@ -1,0 +1,6 @@
+# BACKEND VERCEL ENVIRONMENT VARIABLES  
+# Copy these to Vercel Dashboard: Project → Settings → Environment Variables
+
+CORS_ORIGIN=https://creativecanvas-frontend-u9m8.vercel.app
+NODE_ENV=production
+PORT=3000
