@@ -136,10 +136,10 @@ app.get('/health', (req, res) => {
   
   // Check native dependencies
   try {
-    require('canvas');
-    health.dependencies.canvas = 'available';
+    require('puppeteer');
+    health.dependencies.puppeteer = 'available';
   } catch (e) {
-    health.dependencies.canvas = 'unavailable';
+    health.dependencies.puppeteer = 'unavailable';
   }
   
   try {

@@ -1,10 +1,26 @@
-const { createCanvas, loadImage, registerFont } = require('canvas');
+const puppeteer = require('puppeteer');
 const axios = require('axios');
 
 class CanvasService {
   constructor() {
-    // Register custom fonts if needed
-    // registerFont('path/to/font.ttf', { family: 'CustomFont' });
+    this.browser = null;
+  }
+
+  async initBrowser() {
+    if (!this.browser) {
+      this.browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+    }
+    return this.browser;
+  }
+
+  async closeBrowser() {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
+    }
   }
 
   /**
@@ -16,24 +32,46 @@ class CanvasService {
     try {
       const { width, height, backgroundColor, elements } = canvasData;
       
-      // Create canvas
-      const canvas = createCanvas(width, height);
-      const ctx = canvas.getContext('2d');
-
-      // Set background
-      ctx.fillStyle = backgroundColor;
-      ctx.fillRect(0, 0, width, height);
-
-      // Sort elements by zIndex to maintain layering
-      const sortedElements = elements.sort((a, b) => a.zIndex - b.zIndex);
-
-      // Draw each element
-      for (const element of sortedElements) {
-        await this.drawElement(ctx, element);
-      }
-
-      // Return as PNG buffer
-      return canvas.toBuffer('image/png');
+      // Store background color for use in drawing elements (especially eraser)
+      this.canvasBackgroundColor = backgroundColor;
+      
+      const browser = await this.initBrowser();
+      const page = await browser.newPage();
+      
+      // Set viewport size
+      await page.setViewport({ width, height });
+      
+      // Process images to ensure they're loaded as base64
+      const processedCanvasData = await this.processImagesForRendering(canvasData);
+      
+      // Generate HTML content
+      const html = this.generateHTML(processedCanvasData);
+      
+      // Set content and wait for images to load
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      
+      // Wait for all images to load completely
+      await page.evaluate(() => {
+        return Promise.all(
+          Array.from(document.images, img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise((resolve, reject) => {
+              img.addEventListener('load', resolve);
+              img.addEventListener('error', resolve); // Resolve even on error to not block
+              setTimeout(resolve, 3000); // Timeout after 3 seconds
+            });
+          })
+        );
+      });
+      
+      const imageBuffer = await page.screenshot({
+        type: 'png',
+        clip: { x: 0, y: 0, width, height }
+      });
+      
+      await page.close();
+      
+      return imageBuffer;
     } catch (error) {
       console.error('Error generating canvas image:', error);
       throw new Error('Failed to generate canvas image');
@@ -41,209 +79,202 @@ class CanvasService {
   }
 
   /**
-   * Draw individual element on canvas context
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
-   * @param {Object} element - Element to draw
+   * Generate HTML representation of canvas
+   * @param {Object} canvasData - Canvas configuration and elements
+   * @returns {string} HTML string
    */
-  async drawElement(ctx, element) {
-    try {
-      ctx.save();
+  generateHTML(canvasData) {
+    const { width, height, backgroundColor, elements } = canvasData;
+    
+    // Sort elements by zIndex
+    const sortedElements = elements.sort((a, b) => a.zIndex - b.zIndex);
+    
+    let elementsHTML = '';
+    
+    sortedElements.forEach(element => {
+      elementsHTML += this.generateElementHTML(element);
+    });
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+          }
+          .canvas-container {
+            position: relative;
+            width: ${width}px;
+            height: ${height}px;
+            background-color: ${backgroundColor};
+            overflow: hidden;
+          }
+          .element {
+            position: absolute;
+          }
+          .rectangle {
+            border-radius: 0;
+          }
+          .circle {
+            border-radius: 50%;
+          }
+          .text {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+          }
+          .image {
+            object-fit: contain;
+            opacity: 1;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="canvas-container">
+          ${elementsHTML}
+        </div>
+      </body>
+      </html>
+    `;
+  }
 
-      switch (element.type) {
-        case 'rectangle':
-          await this.drawRectangle(ctx, element);
-          break;
-        case 'circle':
-          await this.drawCircle(ctx, element);
-          break;
-        case 'text':
-          await this.drawText(ctx, element);
-          break;
+  /**
+   * Generate HTML for individual element
+   * @param {Object} element - Element to render
+   * @returns {string} HTML string
+   */
+  generateElementHTML(element) {
+    const { type, x, y, width, height, rotation = 0 } = element;
+    
+    const baseStyle = `
+      left: ${x}px;
+      top: ${y}px;
+      width: ${width}px;
+      height: ${height}px;
+      transform: rotate(${rotation}deg);
+      z-index: ${element.zIndex || 0};
+    `;
+    
+    switch (type) {
+      case 'rectangle':
+        const rectFill = element.fillColor || element.fill || '#000';
+        const rectStroke = element.strokeColor ? `border: ${element.strokeWidth || 1}px solid ${element.strokeColor};` : '';
+        return `<div class="element rectangle" style="${baseStyle} background-color: ${rectFill}; ${rectStroke}"></div>`;
+        
+      case 'circle':
+        const circleFill = element.fillColor || element.fill || '#000';
+        const circleStroke = element.strokeColor ? `border: ${element.strokeWidth || 1}px solid ${element.strokeColor};` : '';
+        return `<div class="element circle" style="${baseStyle} background-color: ${circleFill}; ${circleStroke}"></div>`;
+        
+      case 'text':
+        const textColor = element.color || element.fill || '#000';
+        return `<div class="element text" style="${baseStyle} 
+          color: ${textColor};
+          font-size: ${element.fontSize || 16}px;
+          font-family: ${element.fontFamily || 'Arial'};
+          font-weight: ${element.fontWeight || 'normal'};
+          text-align: ${element.textAlign || 'center'};
+        ">${element.text || ''}</div>`;
         case 'image':
-          await this.drawImage(ctx, element);
-          break;
-        case 'drawing':
-          await this.drawPath(ctx, element);
-          break;
-        default:
-          console.warn(`Unknown element type: ${element.type}`);
-      }
-
-      ctx.restore();
-    } catch (error) {
-      console.error(`Error drawing element ${element.id}:`, error);
-      // Continue with other elements instead of failing completely
+        // Handle both imageUrl and src properties, plus imageData for base64
+        const imgSrc = element.imageData || element.imageUrl || element.src || '';
+        const imgStyle = `${baseStyle} object-fit: ${element.objectFit || 'contain'};`;
+        return `<img class="element image" src="${imgSrc}" style="${imgStyle}" alt="Canvas Image" />`;
+        
+      case 'drawing':
+        // Handle drawing paths (draw and erase)
+        return this.generateDrawingHTML(element, baseStyle);
+        
+      default:
+        return '';
     }
   }
 
   /**
-   * Draw rectangle element
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
-   * @param {Object} element - Rectangle element data
+   * Generate HTML for drawing element (paths)
+   * @param {Object} element - Drawing element to render
+   * @param {string} baseStyle - Base CSS style
+   * @returns {string} HTML string with SVG path
    */
-  async drawRectangle(ctx, element) {
-    const { x, y, width, height, fillColor, strokeColor, strokeWidth } = element;
-
-    // Fill rectangle
-    if (fillColor) {
-      ctx.fillStyle = fillColor;
-      ctx.fillRect(x, y, width, height);
-    }
-
-    // Stroke rectangle
-    if (strokeColor && strokeWidth > 0) {
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = strokeWidth;
-      ctx.strokeRect(x, y, width, height);
-    }
-  }
-
-  /**
-   * Draw circle element
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
-   * @param {Object} element - Circle element data
-   */
-  async drawCircle(ctx, element) {
-    const { x, y, radius, fillColor, strokeColor, strokeWidth } = element;
-
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, 2 * Math.PI);
-
-    // Fill circle
-    if (fillColor) {
-      ctx.fillStyle = fillColor;
-      ctx.fill();
-    }
-
-    // Stroke circle
-    if (strokeColor && strokeWidth > 0) {
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = strokeWidth;
-      ctx.stroke();
-    }
-  }
-
-  /**
-   * Draw text element
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
-   * @param {Object} element - Text element data
-   */
-  async drawText(ctx, element) {
-    const { x, y, text, fontSize, fontFamily, color, fontWeight } = element;
-
-    // Set font properties
-    ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
-    ctx.fillStyle = color;
-    ctx.textBaseline = 'top';
-
-    // Draw text
-    ctx.fillText(text, x, y);
-  }
-
-  /**
-   * Draw image element
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
-   * @param {Object} element - Image element data
-   */
-  async drawImage(ctx, element) {
-    const { x, y, width, height, imageUrl, imageData } = element;
-
-    try {
-      let image;
-
-      if (imageData) {
-        // Handle base64 image data
-        image = await loadImage(imageData);
-      } else if (imageUrl) {
-        // Handle image URL - load from remote source
-        image = await this.loadImageFromUrl(imageUrl);
-      } else {
-        throw new Error('No image source provided');
+  generateDrawingHTML(element, baseStyle) {
+    const { path, color, brushSize, tool } = element;
+    
+    if (!path || path.length < 2) return '';
+    
+    // Calculate bounding box for the path
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    path.forEach(point => {
+      minX = Math.min(minX, point.x);
+      minY = Math.min(minY, point.y);
+      maxX = Math.max(maxX, point.x);
+      maxY = Math.max(maxY, point.y);
+    });
+    
+    // Add padding for stroke width
+    const padding = Math.max(brushSize || 3, 10);
+    minX -= padding;
+    minY -= padding;
+    maxX += padding;
+    maxY += padding;
+    
+    const width = maxX - minX;
+    const height = maxY - minY;
+    
+    // Generate SVG path string
+    let pathString = '';
+    if (path.length < 3) {
+      // Simple line for short paths
+      pathString = `M ${path[0].x - minX} ${path[0].y - minY}`;
+      for (let i = 1; i < path.length; i++) {
+        pathString += ` L ${path[i].x - minX} ${path[i].y - minY}`;
       }
-
-      // Ensure image is loaded and valid
-      if (!image || image.width === 0 || image.height === 0) {
-        throw new Error('Invalid image dimensions');
+    } else {
+      // Smooth curves for longer paths
+      pathString = `M ${path[0].x - minX} ${path[0].y - minY}`;
+      
+      for (let i = 1; i < path.length - 2; i++) {
+        const xc = (path[i].x + path[i + 1].x) / 2 - minX;
+        const yc = (path[i].y + path[i + 1].y) / 2 - minY;
+        pathString += ` Q ${path[i].x - minX} ${path[i].y - minY} ${xc} ${yc}`;
       }
-
-      // Draw image with specified dimensions using high-quality scaling
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(image, x, y, width, height);
-    } catch (error) {
-      console.error('Error loading image:', error);
       
-      // Draw placeholder rectangle for failed images with better styling
-      ctx.save();
-      
-      // Fill background
-      ctx.fillStyle = '#f8f8f8';
-      ctx.fillRect(x, y, width, height);
-      
-      // Draw border
-      ctx.strokeStyle = '#ff0000';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
-      ctx.strokeRect(x, y, width, height);
-      
-      // Draw X mark
-      ctx.strokeStyle = '#ff0000';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([]);
-      const padding = 10;
-      ctx.beginPath();
-      ctx.moveTo(x + padding, y + padding);
-      ctx.lineTo(x + width - padding, y + height - padding);
-      ctx.moveTo(x + width - padding, y + padding);
-      ctx.lineTo(x + padding, y + height - padding);
-      ctx.stroke();
-      
-      // Draw error text
-      ctx.fillStyle = '#ff0000';
-      ctx.font = `${Math.min(14, height / 4)}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('Image Load Error', x + width / 2, y + height / 2 + 10);
-      
-      ctx.restore();
+      // Last segment
+      if (path.length > 2) {
+        pathString += ` Q ${path[path.length - 2].x - minX} ${path[path.length - 2].y - minY} ${path[path.length - 1].x - minX} ${path[path.length - 1].y - minY}`;
+      }
     }
-  }
-
-  /**
-   * Load image from URL with timeout and error handling
-   * @param {string} imageUrl - URL of the image to load
-   * @returns {Promise<Image>} Loaded image
-   */
-  async loadImageFromUrl(imageUrl) {
-    try {
-      // For security, you might want to validate the URL here
-      if (!this.isValidImageUrl(imageUrl)) {
-        throw new Error('Invalid image URL');
-      }
-
-      // Download image with timeout
-      const response = await axios.get(imageUrl, {
-        responseType: 'arraybuffer',
-        timeout: 10000, // 10 second timeout
-        maxContentLength: 10 * 1024 * 1024, // 10MB limit
-        headers: {
-          'User-Agent': 'Canvas-Builder/1.0'
-        }
-      });
-
-      // Verify content type
-      const contentType = response.headers['content-type'];
-      if (!contentType || !contentType.startsWith('image/')) {
-        throw new Error('URL does not point to an image');
-      }
-
-      // Convert to base64 and load
-      const base64 = `data:${contentType};base64,${Buffer.from(response.data).toString('base64')}`;
-      return await loadImage(base64);
-    } catch (error) {
-      console.error('Error loading image from URL:', error);
-      throw error;
-    }
+    
+    // For eraser, use the canvas background color instead of trying to actually erase
+    const strokeColor = tool === 'eraser' ? (this.canvasBackgroundColor || '#ffffff') : (color || '#000000');
+    const strokeWidth = tool === 'eraser' ? (brushSize || 3) * 2 : (brushSize || 3);
+    
+    return `
+      <div class="element drawing" style="
+        position: absolute;
+        left: ${minX}px;
+        top: ${minY}px;
+        width: ${width}px;
+        height: ${height}px;
+        z-index: ${element.zIndex || 0};
+        pointer-events: none;
+      ">
+        <svg width="${width}" height="${height}" style="display: block;">
+          <path 
+            d="${pathString}" 
+            stroke="${strokeColor}" 
+            stroke-width="${strokeWidth}" 
+            stroke-linecap="round" 
+            stroke-linejoin="round" 
+            fill="none"
+          />
+        </svg>
+      </div>
+    `;
   }
 
   /**
@@ -309,22 +340,28 @@ class CanvasService {
     elements.forEach(element => {
       switch (element.type) {
         case 'rectangle':
+        case 'circle':
           maxX = Math.max(maxX, element.x + element.width);
           maxY = Math.max(maxY, element.y + element.height);
           break;
-        case 'circle':
-          maxX = Math.max(maxX, element.x + element.radius);
-          maxY = Math.max(maxY, element.y + element.radius);
-          break;
         case 'text':
           // Estimate text dimensions (rough approximation)
-          const textWidth = element.text.length * element.fontSize * 0.6;
+          const textWidth = element.text.length * (element.fontSize || 16) * 0.6;
           maxX = Math.max(maxX, element.x + textWidth);
-          maxY = Math.max(maxY, element.y + element.fontSize);
+          maxY = Math.max(maxY, element.y + (element.fontSize || 16));
           break;
         case 'image':
           maxX = Math.max(maxX, element.x + element.width);
           maxY = Math.max(maxY, element.y + element.height);
+          break;
+        case 'drawing':
+          // For drawing elements, calculate from path bounds
+          if (element.path && element.path.length > 0) {
+            element.path.forEach(point => {
+              maxX = Math.max(maxX, point.x + (element.brushSize || 3));
+              maxY = Math.max(maxY, point.y + (element.brushSize || 3));
+            });
+          }
           break;
       }
     });
@@ -337,40 +374,73 @@ class CanvasService {
   }
 
   /**
-   * Draw path element (freehand drawing)
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
-   * @param {Object} element - Path element data
+   * Process canvas data to convert image URLs to base64 for reliable rendering
+   * @param {Object} canvasData - Original canvas data
+   * @returns {Object} Processed canvas data with base64 images
    */
-  async drawPath(ctx, element) {
-    const { path, color, brushSize, tool } = element;
+  async processImagesForRendering(canvasData) {
+    const { elements, ...rest } = canvasData;
     
-    if (!path || path.length < 2) return;
+    const processedElements = await Promise.all(elements.map(async (element) => {
+      if (element.type === 'image') {
+        // Handle different image property names from frontend
+        const imageUrl = element.imageUrl || element.src;
+        const imageData = element.imageData;
+        
+        // If we already have base64 data, use it
+        if (imageData && imageData.startsWith('data:')) {
+          return { ...element, imageData, imageUrl: undefined, src: imageData };
+        }
+        
+        // If we have a URL and it's not already base64, convert it
+        if (imageUrl && !imageUrl.startsWith('data:')) {
+          try {
+            const base64Src = await this.convertImageToBase64(imageUrl);
+            return { ...element, imageData: base64Src, imageUrl: undefined, src: base64Src };
+          } catch (error) {
+            console.error('Failed to load image:', imageUrl, error);
+            // Keep original properties on failure
+            return element;
+          }
+        }
+      }
+      return element;
+    }));
     
-    ctx.beginPath();
-    ctx.moveTo(path[0].x, path[0].y);
-    
-    // Set drawing properties
-    if (tool === 'eraser') {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineWidth = brushSize;
-    } else {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = color;
-      ctx.lineWidth = brushSize;
+    return { ...rest, elements: processedElements };
+  }
+
+  /**
+   * Convert image URL to base64 data URL
+   * @param {string} imageUrl - URL of the image
+   * @returns {Promise<string>} Base64 data URL
+   */
+  async convertImageToBase64(imageUrl) {
+    try {
+      if (!this.isValidImageUrl(imageUrl)) {
+        throw new Error('Invalid image URL');
+      }
+
+      const response = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        timeout: 10000,
+        maxContentLength: 10 * 1024 * 1024, // 10MB limit
+        headers: {
+          'User-Agent': 'Canvas-Builder/1.0'
+        }
+      });
+
+      const contentType = response.headers['content-type'];
+      if (!contentType || !contentType.startsWith('image/')) {
+        throw new Error('URL does not point to an image');
+      }
+
+      const base64 = Buffer.from(response.data).toString('base64');
+      return `data:${contentType};base64,${base64}`;
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      throw error;
     }
-    
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    
-    // Draw the path
-    for (let i = 1; i < path.length; i++) {
-      ctx.lineTo(path[i].x, path[i].y);
-    }
-    
-    ctx.stroke();
-    
-    // Reset composite operation
-    ctx.globalCompositeOperation = 'source-over';
   }
 }
 
