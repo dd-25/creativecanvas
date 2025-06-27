@@ -5,18 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run prebuild && npm run build:safe",
-    "prebuild": "node prebuild-cleanup.js",
-    "build:safe": "npm run build:vite-safe || npm run build:vite || npm run build:webpack || npm run build:esbuild || npm run build:complete-fallback",
-    "build:vite": "vite build",
-    "build:vite-safe": "vite build --config vite.config.safe.js",
-    "build:webpack": "webpack --config webpack.config.js",
-    "build:fallback": "npm run build:vite || npm run build:esbuild",
-    "build:clean": "rm -rf node_modules package-lock.json && npm install && npm run build",
-    "build:esbuild": "node build-esbuild.js",
-    "build:complete-fallback": "node build-complete-fallback.js",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "build": "vite build",
+    "build:production": "vite build --config vite.config.production.js",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
     "axios": "^1.6.2",

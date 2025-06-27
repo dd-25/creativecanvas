@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Production-optimized Vite config for Vercel
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -8,25 +9,27 @@ export default defineConfig({
     sourcemap: false,
     minify: 'terser',
     target: 'es2020',
+    assetsDir: 'assets',
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
           icons: ['react-icons'],
           utils: ['axios', 'react-hot-toast']
-        }
+        },
+        assetFileNames: 'assets/[name].[hash][extname]',
+        chunkFileNames: 'assets/[name].[hash].js',
+        entryFileNames: 'assets/[name].[hash].js'
       }
-    }
+    },
+    chunkSizeWarningLimit: 1000
   },
   server: {
     port: 3000,
-    host: true,
-    proxy: {
-      '/api': {
-        target: process.env.VITE_API_BASE_URL || 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      }
-    }
+    host: true
+  },
+  preview: {
+    port: 3000,
+    host: true
   }
 })
