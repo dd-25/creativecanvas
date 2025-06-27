@@ -198,9 +198,12 @@ const exportPNGFromData = async (req, res) => {
 
     const imageBuffer = await canvasService.generateImage(canvasData);
 
+    // Check if we got SVG instead of PNG (fallback scenario)
+    const isSVG = imageBuffer.toString().startsWith('<svg');
+    
     res.set({
-      'Content-Type': 'image/png',
-      'Content-Disposition': `attachment; filename="canvas-export.png"`,
+      'Content-Type': isSVG ? 'image/svg+xml' : 'image/png',
+      'Content-Disposition': `attachment; filename="canvas-export.${isSVG ? 'svg' : 'png'}"`,
       'Content-Length': imageBuffer.length
     });
 

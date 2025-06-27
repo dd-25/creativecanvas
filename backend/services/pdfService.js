@@ -24,16 +24,31 @@ class PDFService {
   async generatePDF(canvasData, options = {}) {
     try {
       const opts = { ...this.defaultOptions, ...options };
-      const { width, height, backgroundColor, elements } = canvasData;
+      let { width, height, backgroundColor, elements } = canvasData;
+
+      // Validate and sanitize canvas dimensions
+      width = Number(width) || 800;
+      height = Number(height) || 600;
+      
+      if (isNaN(width) || isNaN(height) || width <= 0 || height <= 0) {
+        console.warn('Invalid canvas dimensions, using defaults:', { width, height });
+        width = 800;
+        height = 600;
+      }
+
+      // Sanitize elements to remove NaN values
+      elements = elements.map(element => this.sanitizeElement(element)).filter(Boolean);
+
+      const sanitizedCanvasData = { ...canvasData, width, height, elements };
 
       // Try to use canvas service to generate image, fallback to direct PDF generation
       try {
-        const imageBuffer = await canvasService.generateImage(canvasData);
+        const imageBuffer = await canvasService.generateImage(sanitizedCanvasData);
 
         // If we got an SVG buffer (fallback), use direct PDF generation instead
         if (imageBuffer.toString().startsWith('<svg')) {
           console.log('Using direct PDF generation (SVG fallback detected)');
-          return await this.generateDirectPDF(canvasData, options);
+          return await this.generateDirectPDF(sanitizedCanvasData, options);
         }
 
         // Use the image in PDF
@@ -74,7 +89,7 @@ class PDFService {
 
       } catch (imageError) {
         console.log('Image generation failed, using direct PDF generation:', imageError.message);
-        return await this.generateDirectPDF(canvasData, options);
+        return await this.generateDirectPDF(sanitizedCanvasData, options);
       }
 
     } catch (error) {
@@ -504,6 +519,75 @@ class PDFService {
     doc.lineWidth(brushSize)
        .strokeColor(color || '#000000')
        .stroke();
+  }
+
+  /**
+   * Sanitize element data to remove NaN values
+   * @param {Object} element - Element to sanitize
+   * @returns {Object|null} Sanitized element or null if invalid
+   */
+  sanitizeElement(element) {
+    if (!element || !element.type || !element.id) {
+      return null;
+    }
+
+    const sanitized = { ...element };
+
+    // Sanitize numeric properties
+    const numericProps = ['x', 'y', 'width', 'height', 'radius', 'fontSize', 'strokeWidth', 'brushSize'];
+    
+    numericProps.forEach(prop => {
+      if (prop in sanitized) {
+        const value = Number(sanitized[prop]);
+        if (isNaN(value) || !isFinite(value)) {
+          // Set default values for critical properties
+          switch (prop) {
+            case 'x':
+            case 'y':
+              sanitized[prop] = 0;
+              break;
+            case 'width':
+            case 'height':
+              sanitized[prop] = element.type === 'text' ? undefined : 100;
+              break;
+            case 'radius':
+              sanitized[prop] = 50;
+              break;
+            case 'fontSize':
+              sanitized[prop] = 16;
+              break;
+            case 'strokeWidth':
+            case 'brushSize':
+              sanitized[prop] = 2;
+              break;
+            default:
+              sanitized[prop] = 0;
+          }
+          console.warn(`Sanitized ${prop} for element ${element.id}: ${element[prop]} -> ${sanitized[prop]}`);
+        } else {
+          sanitized[prop] = value;
+        }
+      }
+    });
+
+    // Sanitize path data for drawing elements
+    if (sanitized.type === 'drawing' && sanitized.path) {
+      sanitized.path = sanitized.path.filter(point => {
+        const x = Number(point.x);
+        const y = Number(point.y);
+        return !isNaN(x) && !isNaN(y) && isFinite(x) && isFinite(y);
+      }).map(point => ({
+        x: Number(point.x),
+        y: Number(point.y)
+      }));
+      
+      if (sanitized.path.length < 2) {
+        console.warn(`Removing drawing element ${element.id} due to insufficient valid path points`);
+        return null;
+      }
+    }
+
+    return sanitized;
   }
 }
 

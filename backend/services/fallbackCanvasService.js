@@ -12,7 +12,19 @@ class FallbackCanvasService {
    */
   async generatePDF(canvasData) {
     try {
-      const { width, height, backgroundColor, elements } = canvasData;
+      let { width, height, backgroundColor, elements } = canvasData;
+      
+      // Sanitize dimensions
+      width = Number(width) || 800;
+      height = Number(height) || 600;
+      
+      if (isNaN(width) || isNaN(height) || width <= 0 || height <= 0) {
+        width = 800;
+        height = 600;
+      }
+      
+      // Sanitize elements
+      elements = (elements || []).filter(element => element && element.type && element.id);
       
       // Create PDF document
       const doc = new PDFDocument({
@@ -38,7 +50,11 @@ class FallbackCanvasService {
 
         // Draw elements
         elements.forEach(element => {
-          this.drawElementToPDF(doc, element);
+          try {
+            this.drawElementToPDF(doc, this.sanitizeElementBasic(element));
+          } catch (err) {
+            console.warn(`Failed to draw element ${element.id}:`, err.message);
+          }
         });
 
         doc.end();
@@ -56,7 +72,19 @@ class FallbackCanvasService {
    */
   async generateImage(canvasData) {
     try {
-      const { width, height, backgroundColor, elements } = canvasData;
+      let { width, height, backgroundColor, elements } = canvasData;
+      
+      // Sanitize dimensions
+      width = Number(width) || 800;
+      height = Number(height) || 600;
+      
+      if (isNaN(width) || isNaN(height) || width <= 0 || height <= 0) {
+        width = 800;
+        height = 600;
+      }
+      
+      // Sanitize elements
+      elements = (elements || []).filter(element => element && element.type && element.id);
       
       let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
       
@@ -67,7 +95,11 @@ class FallbackCanvasService {
       
       // Elements
       elements.forEach(element => {
-        svgContent += this.elementToSVG(element);
+        try {
+          svgContent += this.elementToSVG(this.sanitizeElementBasic(element));
+        } catch (err) {
+          console.warn(`Failed to convert element ${element.id} to SVG:`, err.message);
+        }
       });
       
       svgContent += '</svg>';
@@ -77,6 +109,29 @@ class FallbackCanvasService {
       console.error('Error generating image:', error);
       throw new Error('Failed to generate image');
     }
+  }
+
+  /**
+   * Basic element sanitization for fallback service
+   * @param {Object} element - Element to sanitize
+   * @returns {Object} Sanitized element
+   */
+  sanitizeElementBasic(element) {
+    const sanitized = { ...element };
+    
+    // Sanitize numeric properties
+    ['x', 'y', 'width', 'height', 'radius', 'fontSize', 'strokeWidth', 'brushSize'].forEach(prop => {
+      if (prop in sanitized) {
+        const value = Number(sanitized[prop]);
+        if (isNaN(value) || !isFinite(value)) {
+          sanitized[prop] = prop === 'fontSize' ? 16 : (prop === 'width' || prop === 'height') ? 100 : 0;
+        } else {
+          sanitized[prop] = value;
+        }
+      }
+    });
+    
+    return sanitized;
   }
 
   drawElementToPDF(doc, element) {
