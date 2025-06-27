@@ -26,60 +26,69 @@ class PDFService {
       const opts = { ...this.defaultOptions, ...options };
       const { width, height, backgroundColor, elements } = canvasData;
 
-      // Use canvas service to generate consistent image first
-      const imageBuffer = await canvasService.generateImage(canvasData);
+      // Try to use canvas service to generate image, fallback to direct PDF generation
+      try {
+        const imageBuffer = await canvasService.generateImage(canvasData);
 
-      // Calculate PDF page size to match canvas exactly
-      const pageWidth = width;
-      const pageHeight = height;
-
-      // Create PDF document with exact canvas dimensions
-      const doc = new PDFDocument({
-        size: [pageWidth, pageHeight],
-        margin: 0,
-        compress: opts.compress,
-        info: {
-          Title: `Canvas Export - ${canvasData.id || 'Untitled'}`,
-          Author: 'Canvas Builder',
-          Subject: 'Canvas Design Export',
-          Creator: 'Canvas Builder API',
-          Producer: 'Canvas Builder PDF Service',
-          CreationDate: new Date(),
-          ModDate: new Date()
+        // If we got an SVG buffer (fallback), use direct PDF generation instead
+        if (imageBuffer.toString().startsWith('<svg')) {
+          console.log('Using direct PDF generation (SVG fallback detected)');
+          return await this.generateDirectPDF(canvasData, options);
         }
-      });
 
-      // Create buffer to store PDF data
-      const buffers = [];
-      doc.on('data', buffer => buffers.push(buffer));
-      
-      const pdfPromise = new Promise((resolve, reject) => {
-        doc.on('end', () => {
-          try {
-            const pdfBuffer = Buffer.concat(buffers);
-            resolve(pdfBuffer);
-          } catch (error) {
-            reject(error);
+        // Use the image in PDF
+        const pageWidth = width;
+        const pageHeight = height;
+
+        const doc = new PDFDocument({
+          size: [pageWidth, pageHeight],
+          margin: 0,
+          compress: opts.compress,
+          info: {
+            Title: `Canvas Export - ${canvasData.id || 'Untitled'}`,
+            Author: 'Canvas Builder',
+            Subject: 'Canvas Design Export',
+            Creator: 'Canvas Builder API',
+            Producer: 'Canvas Builder PDF Service',
+            CreationDate: new Date(),
+            ModDate: new Date()
           }
         });
-        
-        doc.on('error', reject);
-      });
 
-      // Add the canvas image to PDF to ensure pixel-perfect consistency
-      doc.image(imageBuffer, 0, 0, {
-        width: width,
-        height: height
-      });
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
 
-      // Finalize PDF
-      doc.end();
+        return new Promise((resolve, reject) => {
+          doc.on('end', () => resolve(Buffer.concat(chunks)));
+          doc.on('error', reject);
 
-      return await pdfPromise;
+          // Set background
+          if (backgroundColor && backgroundColor !== '#ffffff') {
+            doc.rect(0, 0, pageWidth, pageHeight).fill(backgroundColor);
+          }
+
+          // Add the generated image
+          doc.image(imageBuffer, 0, 0, { width: pageWidth, height: pageHeight });
+          doc.end();
+        });
+
+      } catch (imageError) {
+        console.log('Image generation failed, using direct PDF generation:', imageError.message);
+        return await this.generateDirectPDF(canvasData, options);
+      }
+
     } catch (error) {
       console.error('Error generating PDF:', error);
       throw new Error(`Failed to generate PDF: ${error.message}`);
     }
+  }
+
+  /**
+   * Generate PDF directly from canvas elements (fallback method)
+   */
+  async generateDirectPDF(canvasData, options = {}) {
+    const fallbackService = require('./fallbackCanvasService');
+    return await fallbackService.generatePDF(canvasData);
   }
 
   /**

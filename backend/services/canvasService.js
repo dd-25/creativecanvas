@@ -4,16 +4,25 @@ const axios = require('axios');
 class CanvasService {
   constructor() {
     this.browser = null;
+    this.fallbackService = null;
   }
 
   async initBrowser() {
-    if (!this.browser) {
-      this.browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
+    try {
+      if (!this.browser) {
+        this.browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+      }
+      return this.browser;
+    } catch (error) {
+      console.error('Failed to initialize puppeteer, using fallback service:', error.message);
+      if (!this.fallbackService) {
+        this.fallbackService = require('./fallbackCanvasService');
+      }
+      throw error;
     }
-    return this.browser;
   }
 
   async closeBrowser() {
@@ -73,8 +82,14 @@ class CanvasService {
       
       return imageBuffer;
     } catch (error) {
-      console.error('Error generating canvas image:', error);
-      throw new Error('Failed to generate canvas image');
+      console.error('Error generating canvas image with puppeteer, trying fallback:', error);
+      
+      // Use fallback service for serverless environments
+      if (!this.fallbackService) {
+        this.fallbackService = require('./fallbackCanvasService');
+      }
+      
+      return await this.fallbackService.generateImage(canvasData);
     }
   }
 
